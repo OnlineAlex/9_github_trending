@@ -1,63 +1,61 @@
 import requests
 from datetime import datetime, timedelta
 
-API_GITHUB = 'https://api.github.com'
 
-
-def get_date_for_git_api():
-    date_search = datetime.now() - timedelta(days=7)
-    date_for_git = datetime.strftime(date_search, '%Y-%m-%dT%H:%M')
-    return date_for_git
+def minus_days(days_number):
+    date_days_ago = datetime.now() - timedelta(days=days_number)
+    return date_days_ago
 
 
 def get_trending_repositories(date_start_search, top_size):
+    params_repo_search = {
+        'q': 'created:>{}'.format(date_start_search),
+        'sort': 'star'
+    }
     response = requests.get(
-        '{}/search/repositories?q=created:>{}&sort=star'.format(
-            API_GITHUB,
-            date_start_search
-        )
+        'https://api.github.com/search/repositories',
+        params=params_repo_search
     )
-
-    for item in range(top_size):
-        repository = response.json()['items'][item]
-        yield {
-            'repo_owner': repository['owner']['login'],
-            'repo_name': repository['name'],
-            'stars': repository['stargazers_count'],
-            'repo_url': repository['html_url']
-        }
+    repositories = response.json()['items']
+    return repositories[:top_size]
 
 
 def get_open_issues_amount(repo_owner, repo_name):
-    response = requests.get('{}/repos/{}/{}/issues'.format(
-        API_GITHUB,
-        repo_owner,
-        repo_name
-    ))
+    response = requests.get(
+        'https://api.github.com/repos/{}/{}/issues'.format(
+            repo_owner,
+            repo_name
+        )
+    )
     open_issues = response.json()
 
     return len(open_issues)
 
 
 if __name__ == '__main__':
-    date_start = get_date_for_git_api()
+    date_start = minus_days(days_number=7)
+    date_search_format = datetime.strftime(
+        date_start,
+        '%Y-%m-%dT%H:%M'
+    )
+    print(date_search_format)
     try:
         trending_repositories = get_trending_repositories(
-            date_start,
+            date_search_format,
             top_size=20
         )
 
         for index, repo in enumerate(trending_repositories, start=1):
             issues_amount = get_open_issues_amount(
-                repo['repo_owner'],
-                repo['repo_name']
+                repo['owner']['login'],
+                repo['name']
             )
             print('{:>2}: {:<30} stars={:<4}   открыто issues={:<2}   {}'.format(
                 index,
-                repo['repo_name'],
-                repo['stars'],
+                repo['name'],
+                repo['stargazers_count'],
                 issues_amount,
-                repo['repo_url']
+                repo['html_url']
             ))
     except requests.ConnectionError:
         exit('Не удалось подключится к github.com')
