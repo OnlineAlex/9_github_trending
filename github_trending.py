@@ -2,7 +2,7 @@ import requests
 from datetime import datetime, timedelta
 
 
-def minus_days(days_number):
+def get_date_days_ago(days_number):
     date_days_ago = datetime.now() - timedelta(days=days_number)
     return date_days_ago
 
@@ -33,12 +33,12 @@ def get_open_issues_amount(repo_owner, repo_name):
 
 
 if __name__ == '__main__':
-    date_start = minus_days(days_number=7)
+    date_start = get_date_days_ago(days_number=7)
     date_search_format = datetime.strftime(
         date_start,
         '%Y-%m-%dT%H:%M'
     )
-    print(date_search_format)
+
     try:
         trending_repositories = get_trending_repositories(
             date_search_format,
